@@ -1,0 +1,29 @@
+[project]
+   name = "gtfs_rt_tools"
+   version = "0.1.0"
+   description = "Tools for working with GTFS Realtime data"
+   authors = [{name = "Your Name", email = "your.email@example.com"}]
+   readme = "README.md"
+   requires-python = ">=3.12"
+   classifiers = [
+       "Programming Language :: Python :: 3",
+       "License :: OSI Approved :: MIT License",
+       "Operating System :: OS Independent",
+       ]
+dependencies = [
+    "gtfs-realtime-bindings>=1.0.0",
+    "pandas>=2.2.2",
+    "pyspark>=3.5.2",
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+   gtfs-rt-tools = "gtfs_rt_tools.cli:main"
+
+[project.urls]
+   "Homepage" = "https://github.com/yourusername/gtfs_rt_tools"
+   "Bug Tracker" = "https://github.com/yourusername/gtfs_rt_tools/issues"
+
+[build-system]
+   requires = ["hatchling"]
+   build-backend = "hatchling.build"
