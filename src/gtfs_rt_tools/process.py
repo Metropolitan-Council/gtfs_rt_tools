@@ -53,13 +53,10 @@ def download_single_feed_once(leading_url, out_dir):
     except Exception as e:
         print(f"Failed to process Alerts feed: {e}", file=sys.stderr)
 
-
-
-
-
-
-
-
+def download_single_feed_interval(leading_url, out_dir, interval):
+    while True:
+        download_single_feed_once(leading_url, out_dir)
+        time.sleep(interval)
 
 def process_feeds_delta(vp_url, tu_url, interval, bronze_path, silver_path, output_format="delta"):
     spark = SparkSession.builder.appName("GTFS-RT Processor").getOrCreate()
