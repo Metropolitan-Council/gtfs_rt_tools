@@ -1,3 +1,5 @@
+# contains functions used to convert .pb files to JSON or tabular formats
+
 import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, LongType

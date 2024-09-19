@@ -1,3 +1,4 @@
+# defines the CLI tool
 import argparse
 from gtfs_rt_tools.process import download_single_feed_once, download_single_feed_interval, parse_single_feed_csv
 
@@ -25,7 +26,7 @@ def main():
         else:
             download_single_feed_once(args.url, args.output)
     elif args.command == "parse":
-        parse_single_feed_csv(args.input, args.archive, args.output)
+        process_single_feed_csv(args.input, args.archive, args.output)
 
 if __name__ == "__main__":
     main()

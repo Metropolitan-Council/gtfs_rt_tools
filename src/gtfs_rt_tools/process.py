@@ -1,3 +1,4 @@
+# contains functions to do larger chunks of the logging and processing steps
 import os
 import time
 from datetime import datetime
@@ -109,7 +110,7 @@ def process_feeds_delta(vp_url, tu_url, interval, bronze_path, silver_path, outp
 
         time.sleep(interval)
 
-def parse_single_feed_csv(input_dir, archive_dir, output_dir):
+def process_single_feed_csv(input_dir, archive_dir, output_dir):
     for feed_type in ['tu', 'vp', 'al']:
         feed_input_dir = os.path.join(input_dir, feed_type)
         feed_archive_dir = os.path.join(archive_dir, feed_type)

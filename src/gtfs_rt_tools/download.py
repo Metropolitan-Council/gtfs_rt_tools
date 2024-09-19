@@ -1,3 +1,4 @@
+# contains functions to download GTFS-rt feeds and format downloaded files
 import os
 import re
 from datetime import datetime
