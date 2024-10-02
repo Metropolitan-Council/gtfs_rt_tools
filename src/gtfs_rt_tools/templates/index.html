@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vehicle Positions Map</title>
+    <style>#map { height: 600px; }</style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+</head>
+<body>
+    <h1>Vehicle Positions Map</h1>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([44.9778, -93.2650], 13);  // Set view to a default location
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // Function to fetch vehicle positions and update the map
+        function updateMap() {
+            fetch('/vehicle_positions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error(data.error);
+                        return;
+                    }
+
+                    // Clear existing markers
+                    map.eachLayer((layer) => {
+                        if (!!layer.toGeoJSON) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    // Add new markers for each vehicle position
+                    data.forEach(vehicle => {
+                        L.marker([vehicle.latitude, vehicle.longitude]).addTo(map)
+                            .bindPopup(`Vehicle ID: ${vehicle.vehicle_id}`);
+                    });
+                })
+                .catch(error => console.error('Error fetching vehicle positions:', error));
+        }
+
+        // Initial map update
+        updateMap();
+
+        // Periodically update the map every 10 seconds
+        setInterval(updateMap, 10000);
+    </script>
+</body>
+</html>
+

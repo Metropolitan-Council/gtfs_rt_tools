@@ -11,6 +11,7 @@
        "Operating System :: OS Independent",
        ]
 dependencies = [
+    "flask>=3.0.3",
     "gtfs-realtime-bindings>=1.0.0",
     "pandas>=2.2.2",
     "pyspark>=3.5.2",
