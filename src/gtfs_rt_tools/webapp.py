@@ -5,6 +5,9 @@ import pandas as pd
 import threading
 import time
 import logging
+import socket
+import sys
+import atexit
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -78,13 +81,35 @@ def set_folder(folder_path):
     set_csv_folder(folder_path)
     return jsonify({"status": "success", "folder": folder_path})
 
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+def cleanup():
+    logging.info("Cleaning up and shutting down...")
+
 if __name__ == '__main__':
+    port = 5000  # You can change this to your preferred port
+    
+    if is_port_in_use(port):
+        logging.error(f"Port {port} is already in use. Please free up the port and try again.")
+        sys.exit(1)
+    
+    # Register the cleanup function to be called on exit
+    atexit.register(cleanup)
+    
     # Example: set folder for testing, replace with your actual path
     set_csv_folder('/path/to/your/csv/folder')
+    
     # Start the background thread to refresh vehicle positions
-    threading.Thread(target=refresh_vehicle_positions, daemon=True).start()
+    refresh_thread = threading.Thread(target=refresh_vehicle_positions, daemon=True)
+    refresh_thread.start()
+    
     # Run the app
     try:
-        app.run(debug=True)
+        app.run(debug=True, use_reloader=False, port=port)
     except Exception as e:
         logging.error(f"Error running the app: {e}")
+    finally:
+        logging.info("Shutting down the application...")
+        # Perform any necessary cleanup here
