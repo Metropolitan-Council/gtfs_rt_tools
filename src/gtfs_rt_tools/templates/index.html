@@ -11,6 +11,20 @@
             margin-bottom: 10px; 
             font-weight: bold;
         }
+        .legend {
+            line-height: 18px;
+            color: #555;
+            background-color: white;
+            padding: 6px 8px;
+            border-radius: 5px;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 </head>
@@ -21,10 +35,48 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
         var map = L.map('map').setView([44.9778, -93.2650], 13);  // Set view to a default location
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {opacity: 0.3}).addTo(map);
 
         function updateLogtime(logtime) {
             document.getElementById('logtime').textContent = 'Log Time: ' + logtime;
+        }
+
+        function getColor(speed) {
+            if (speed === null || speed === undefined) return '#808080';  // Grey for no speed data
+            // Convert speed from m/s to mph
+	    var speed_mph = speed * 2.23694;
+            return speed_mph > 40 ? '#d73027' :
+                   speed_mph > 35 ? '#f46d43' :
+                   speed_mph > 30 ? '#fdae61' :
+                   speed_mph > 25 ? '#fee08b' :
+                   speed_mph > 20 ? '#ffffbf' :
+                   speed_mph > 15 ? '#d9ef8b' :
+                   speed_mph > 10 ? '#a6d96a' :
+                   speed_mph > 5  ? '#66bd63' :
+                                '#1a9850';
+        }
+
+        function createArrowIcon(bearing, color) {
+            return L.divIcon({
+                html: `<svg width="20" height="20" viewBox="0 0 20 20">
+                         <polygon points="10,1 1,19 10,15 19,19" fill="${color}" 
+                                  transform="rotate(${bearing}, 10, 10)"/>
+                       </svg>`,
+                className: 'arrow-icon',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+        }
+
+        function createCircleIcon(color) {
+            return L.divIcon({
+                html: `<svg width="14" height="14" viewBox="0 0 14 14">
+                         <circle cx="7" cy="7" r="6" fill="${color}" stroke="#000000" stroke-width="1"/>
+                       </svg>`,
+                className: 'circle-icon',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            });
         }
 
         // Function to fetch vehicle positions and update the map
@@ -65,15 +117,22 @@
                             console.warn('Invalid coordinates for vehicle:', vehicle);
                             return;
                         }
+                        var color = getColor(vehicle.speed);
+                        var icon = vehicle.bearing !== null && vehicle.bearing !== undefined
+                            ? createArrowIcon(vehicle.bearing, color)
+                            : createCircleIcon(color);
+
                         var popupContent = `
                             <strong>Vehicle ID:</strong> ${vehicle.vehicle_id}<br>
                             <strong>Route ID:</strong> ${vehicle.route_id}<br>
                             <strong>Trip ID:</strong> ${vehicle.trip_id}<br>
                             <strong>Vehicle Label:</strong> ${vehicle.vehicle_label}<br>
                             <strong>Latitude:</strong> ${lat}<br>
-                            <strong>Longitude:</strong> ${lng}
+                            <strong>Longitude:</strong> ${lng}<br>
+                            <strong>Speed:</strong> ${vehicle.speed !== null ? (vehicle.speed*2.23694).toFixed(2) + 'mph' : 'N/A'}<br>
+                            <strong>Bearing:</strong> ${vehicle.bearing !== null ? vehicle.bearing + '°' : 'N/A'}
                         `;
-                        L.marker([lat, lng]).addTo(map)
+                        L.marker([lat, lng], {icon: icon}).addTo(map)
                             .bindPopup(popupContent);
                         if (index === 0) {
                             console.log('Added first marker for vehicle:', vehicle);
@@ -84,11 +143,29 @@
                 .catch(error => console.error('Error fetching vehicle positions:', error));
         }
 
+	// Create a legend
+        var legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                grades = [0, 5, 10, 15, 20, 25, 30, 35, 40],
+                labels = [];
+            div.innerHTML += '<strong>Speed (mph)</strong><br>';
+            for (var i = 0; i < grades.length; i++) {
+                var color = getColor(grades[i] * 0.44704 + 0.1);
+                div.innerHTML +=
+                    '<i style="background:' + color + '"></i> ' +
+                    grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+            }
+            // Add 'No data' on a new line
+            div.innerHTML += '<br><i style="background: #808080"></i> No data';
+            return div;
+        };
+        legend.addTo(map);
+
         // Initial map update
         updateMap();
-
-        // Periodically update the map every 10 seconds
-        setInterval(updateMap, 10000);
+        // Periodically update the map every 5 seconds
+        setInterval(updateMap, 5000);
     </script>
 </body>
 </html>

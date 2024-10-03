@@ -40,7 +40,7 @@ def read_vehicle_positions():
     if latest_file:
         try:
             df = pd.read_csv(latest_file)
-            columns = ['vehicle_id', 'latitude', 'longitude', 'route_id', 'trip_id', 'vehicle_label']
+            columns = ['vehicle_id', 'latitude', 'longitude', 'route_id', 'trip_id', 'vehicle_label', 'bearing', 'speed']
             result = df[columns].to_dict(orient='records')
             logging.info(f"Read {len(result)} vehicle positions from CSV.")
             
