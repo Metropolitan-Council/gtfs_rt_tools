@@ -3,225 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GTFS Feed Comparison</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Feed Comparison Tool</title>
+    
+    <!-- Required external dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
-        .table-wrapper {
-            width: 50%;
-            float: left;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-        .table-container {
-            height: calc(100vh - 400px);
-            overflow: auto;
-            border: 1px solid #dee2e6;
-            position: relative;
-        }
-        .table {
-            margin-bottom: 0;
-            white-space: nowrap;
-        }
-        .table td, .table th {
-            white-space: nowrap;
-            padding: 8px;
-        }
-        .table thead th {
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 1;
-        }
-        .filter-container {
-            background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-        }
-        .clearfix::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
-        .pagination-info {
-            text-align: center;
-            margin: 10px 0;
-        }
-        pre.filter-help {
-            font-size: 0.8em;
-            margin-top: 10px;
-            padding: 10px;
-            background: #fff;
-            border: 1px solid #dee2e6;
+        .hidden-table {
+            display: none;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 min-h-screen p-4">
+    <!-- URL Input Form -->
     <div class="container-fluid py-4">
-        <!-- Form Container -->
-        <div class="mb-4 p-3 bg-light rounded">
-            <form method="POST" action="{{ url_for('download') }}" class="row g-3">
-                <div class="col-md-5">
-                    <input type="url" 
-                           class="form-control" 
-                           id="url1" 
-                           name="url1" 
-                           value="https://svc.metrotransit.org/mtgtfs/tm/tripupdates.pb" 
-                           required>
+        <div class="mb-4 p-3 bg-white rounded shadow">
+            <form action="/download" method="post" class="flex gap-4 items-end">
+                <div class="flex-1">
+                    <label for="url1" class="block text-sm font-medium text-gray-700">Feed 1 URL</label>
+                    <input type="text" id="url1" name="url1" 
+                           value="https://svc.metrotransit.org/mtgtfs/tm/tripupdates.pb"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
                 </div>
-                <div class="col-md-5">
-                    <input type="url" 
-                           class="form-control" 
-                           id="url2" 
-                           name="url2" 
-                           value="https://svc.metrotransit.org/mtgtfs/tripupdates.pb" 
-                           required>
+                <div class="flex-1">
+                    <label for="url2" class="block text-sm font-medium text-gray-700">Feed 2 URL</label>
+                    <input type="text" id="url2" name="url2" 
+                           value="https://svc.metrotransit.org/mtgtfs/tripupdates.pb"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Download & Compare</button>
-                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Download & Compare
+                </button>
             </form>
         </div>
 
         {% if error %}
-        <div class="alert alert-danger">
-            {{ error }}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{ error }}</span>
         </div>
         {% endif %}
 
-        <!-- Filter Container -->
-        <div class="filter-container" {% if not csv1 and not csv2 %}style="display: none;"{% endif %}>
-            <div class="row g-3">
-                <div class="col-md-9">
-                    <input type="text" 
-                           class="form-control" 
-                           id="filter-expr" 
-                           placeholder="Enter filter expression (e.g., route_id = 10 AND (trip_id = 2 OR trip_id = 3))">
-                </div>
-                <div class="col-md-2">
-                    <select class="form-control" id="page-size">
-                        <option value="25">25 rows</option>
-                        <option value="50" selected>50 rows</option>
-                        <option value="100">100 rows</option>
-                        <option value="250">250 rows</option>
-                        <option value="500">500 rows</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <button onclick="applyFilters()" class="btn btn-secondary w-100">Apply Filters</button>
-                </div>
-            </div>
-            <pre class="filter-help">
-Filter Expression Examples:
-- Single condition: route_id = 10
-- Multiple AND conditions: route_id = 10 AND trip_id = 123
-- OR conditions: route_id = 10 OR route_id = 11
-- Complex grouping: (route_id = 10 OR route_id = 11) AND trip_id = 123
-- Numeric comparisons: departure_delay > 300</pre>
-        </div>
-
-        <!-- Pagination Controls -->
-        <div class="pagination-container text-center mb-3" {% if not csv1 and not csv2 %}style="display: none;"{% endif %}>
-            <button onclick="previousPage()" class="btn btn-sm btn-outline-primary">&laquo; Previous</button>
-            <span id="page-info" class="mx-3">
-                Page <span id="current-page">{{ current_page|default(1) }}</span>
-            </span>
-            <button onclick="nextPage()" class="btn btn-sm btn-outline-primary">Next &raquo;</button>
-        </div>
-
-        <!-- Tables Container -->
-        <div class="clearfix">
-            <!-- Feed 1 -->
-            <div class="table-wrapper">
-                <h4>Feed 1 <small class="text-muted">(<span id="total-rows-1">{{ total_rows1 }}</span> rows)</small></h4>
-                <div class="table-container">
-                    <div id="table-1">
-                        {% if csv1 %}
-                            {{ csv1|safe }}
-                        {% else %}
-                            <p class="text-center p-3">No data loaded for Feed 1</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feed 2 -->
-            <div class="table-wrapper">
-                <h4>Feed 2 <small class="text-muted">(<span id="total-rows-2">{{ total_rows2 }}</span> rows)</small></h4>
-                <div class="table-container">
-                    <div id="table-2">
-                        {% if csv2 %}
-                            {{ csv2|safe }}
-                        {% else %}
-                            <p class="text-center p-3">No data loaded for Feed 2</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-<script>
-    let currentPage = {{ current_page|default(1) }};
-    
-    function updateTables(data) {
-        if (data.error) {
-            alert(data.error);
-            return;
-        }
+        {% if csv1 and csv2 %}
+        <div id="feed-comparison-root"></div>
         
-        document.getElementById('table-1').innerHTML = data.csv1;
-        document.getElementById('table-2').innerHTML = data.csv2;
-        document.getElementById('total-rows-1').textContent = data.total_rows1;
-        document.getElementById('total-rows-2').textContent = data.total_rows2;
-        document.getElementById('current-page').textContent = data.current_page;
-    }
+        <!-- Store the original tables (hidden) -->
+        <div class="hidden">
+            {{ csv1|safe }}
+            {{ csv2|safe }}
+        </div>
 
-    function applyFilters() {
-        const filters = {
-            filter_expr: document.getElementById('filter-expr').value,
-            page: currentPage
-        };
-
-        console.log('Sending filters:', filters);  // Debug log
-
-        fetch('/filter', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(filters)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Received response:', data);  // Debug log
-            updateTables(data);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error applying filters: ' + error);
-        });
-    }
-
-    function previousPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            applyFilters();
-        }
-    }
-
-    function nextPage() {
-        currentPage++;
-        applyFilters();
-    }
-
-    // Add event listener for Enter key in filter input
-    document.getElementById('filter-expr').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            applyFilters();
-        }
-    });
-</script>
+        <!-- React Component Script -->
+        <script type="text/babel">
+            // Import the LinkedReactableTables component
+            const { useState, useRef, useEffect } = React;
+            
+            // Copy the entire LinkedReactableTables component code here
+            {% include 'linked_reactable_tables.jsx' %}
+            
+            // Render the component
+            const feedComparisonRoot = document.getElementById('feed-comparison-root');
+            if (feedComparisonRoot) {
+                const root = ReactDOM.createRoot(feedComparisonRoot);
+                root.render(
+                    <LinkedReactableTables 
+                        data1={`{{ csv1|safe }}`}
+                        data2={`{{ csv2|safe }}`}
+                        title1={`Feed 1 ({{ total_rows1 }} rows)`}
+                        title2={`Feed 2 ({{ total_rows2 }} rows)`}
+                    />
+                );
+            }
+        </script>
+        {% endif %}
+    </div>
 </body>
 </html>
