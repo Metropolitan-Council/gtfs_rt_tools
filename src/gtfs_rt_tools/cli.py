@@ -4,7 +4,8 @@ import time
 import threading
 import socket
 from gtfs_rt_tools.process import download_single_feed_once, download_single_feed_interval, process_single_feed_csv
-from gtfs_rt_tools.webapp import app, set_csv_folder  # Import the web app and the function to set the folder
+from gtfs_rt_tools.webapp import app as gtfs_webapp, set_csv_folder  # Existing GTFS Webapp
+from gtfs_rt_tools.feed_comparison import app as new_app 
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -16,8 +17,13 @@ def find_available_port(start_port=5000, max_port=5050):
             return port
     raise RuntimeError(f"No available ports in range {start_port}-{max_port}")
 
-def run_webapp(csv_folder, port):
-    set_csv_folder(csv_folder)
+def run_webapp(app, csv_folder=None, urls=None, port=5000):
+    # Configure the web app based on which one is being run
+    if csv_folder:
+        set_csv_folder(csv_folder)  # Set folder for existing GTFS app
+    if urls:
+        set_urls(urls)  # Set URLs for the new app
+
     app.run(debug=True, use_reloader=False, port=port)
 
 def main():
@@ -36,9 +42,12 @@ def main():
     parse_parser.add_argument("archive", help="Archive directory for processed files")
     parse_parser.add_argument("output", help="Output directory for parsed CSV files")
 
-    # Web app command
-    web_parser = subparsers.add_parser("web", help="Run the web application")
+    # Existing Web app command (using GTFS CSV files)
+    web_parser = subparsers.add_parser("web", help="Run the GTFS web application")
     web_parser.add_argument("csv_folder", help="Path to the folder containing vehicle positions CSV files")
+
+    # New Web app command (for downloading and displaying JSON)
+    feed_compare_web_parser = subparsers.add_parser("compare-feeds", help="Run the web application for comparing GTFS feeds")
 
     args = parser.parse_args()
 
@@ -47,19 +56,36 @@ def main():
             download_single_feed_interval(args.url, args.output, args.interval)
         else:
             download_single_feed_once(args.url, args.output)
+
     elif args.command == "parse":
         process_single_feed_csv(args.input, args.archive, args.output)
+
     elif args.command == "web":
+        # Existing GTFS Webapp (CSV-based)
         port = find_available_port()
-        print(f"Starting web app on port {port}")
-        webapp_thread = threading.Thread(target=run_webapp, args=(args.csv_folder, port), daemon=True)
+        print(f"Starting GTFS CSV web app on port {port}")
+        webapp_thread = threading.Thread(target=run_webapp, args=(gtfs_webapp, args.csv_folder, None, port), daemon=True)
         webapp_thread.start()
         print(f"Web app running. Access it at http://127.0.0.1:{port}/")
         try:
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("Shutting down the web app...")
+            print("Shutting down the GTFS CSV web app...")
+
+    elif args.command == "compare-feeds":
+        # New GTFS Webapp (for .pb and JSON-based display)
+        port = find_available_port()
+        print(f"Starting GTFS feed comparison web app on port {port}")
+        webapp_thread = threading.Thread(target=run_webapp, args=(new_app, None, None, port), daemon=True)
+        webapp_thread.start()
+        print(f"Web app running. Access it at http://127.0.0.1:{port}/")
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("Shutting down the GTFS feed comparison web app...")
 
 if __name__ == "__main__":
     main()
+

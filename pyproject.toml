@@ -16,6 +16,9 @@ dependencies = [
     "pandas>=2.2.2",
     "pyspark>=3.5.2",
     "requests>=2.31.0",
+    "streamlit-diff-viewer>=0.0.2",
+    "streamlit>=1.39.0",
+    "typing-extensions>=4.12.2",
 ]
 
 [project.scripts]
