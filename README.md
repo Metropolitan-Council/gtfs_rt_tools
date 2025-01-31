@@ -13,7 +13,6 @@ This is a Python package and CLI tool used to download, process, and archive GTF
 
 - can parse a single .pb file to CSV
 - can parse the outputs of the `download` command, keeping date-archived structure for archived .pb files and processed CSV files
-- can also write outputs to Databricks delta tables (for MT's Databricks workflows)
 
 ### View
 
