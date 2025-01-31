@@ -184,8 +184,8 @@ def download():
         page_df2 = get_paginated_data(df2, 1)
         
         # Convert to HTML with nowrap
-        html1 = page_df1.to_html(classes='table table-striped table-bordered', escape=True, index=False)
-        html2 = page_df2.to_html(classes='table table-striped table-bordered', escape=True, index=False)
+        html1 = page_df1.to_html(classes='table table-striped table-bordered', escape=True, index=False).replace('text-xs font-medium text-gray-500 uppercase', 'text-xs font-medium text-gray-500')
+        html2 = page_df2.to_html(classes='table table-striped table-bordered', escape=True, index=False).replace('text-xs font-medium text-gray-500 uppercase', 'text-xs font-medium text-gray-500')
         
         return render_template('feed_comparison_index.html', 
                              csv1=html1, 
@@ -223,8 +223,8 @@ def filter_data():
         page_df2 = get_paginated_data(filtered_df2, page)
         
         # Convert to HTML with nowrap
-        html1 = page_df1.to_html(classes='table table-striped table-bordered', escape=True, index=False)
-        html2 = page_df2.to_html(classes='table table-striped table-bordered', escape=True, index=False)
+        html1 = page_df1.to_html(classes='table table-striped table-bordered', escape=True, index=False).replace('text-xs font-medium text-gray-500 uppercase', 'text-xs font-medium text-gray-500')
+        html2 = page_df2.to_html(classes='table table-striped table-bordered', escape=True, index=False).replace('text-xs font-medium text-gray-500 uppercase', 'text-xs font-medium text-gray-500')
         
         return jsonify({
             'csv1': html1,
